@@ -21,12 +21,21 @@ import android.view.SurfaceView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,13 +45,17 @@ public class MainActivity extends AppCompatActivity {
     SurfaceView surfaceView;
     CameraSource cameraSource;
     BarcodeDetector barcodeDetector;
+    private RequestQueue requestQueue;
+    private String url;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         surfaceView = findViewById(R.id.cameraView);
-
+        requestQueue = Volley.newRequestQueue(getApplicationContext());
+        url = "http://192.168.43.182:3000/postdata";
+        requestQueue.start();
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED){
             if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity
                             .this,
@@ -121,6 +134,11 @@ public class MainActivity extends AppCompatActivity {
                     Message msg = handler.obtainMessage();
                     msg.obj = documentId;
                     handler.sendMessage(msg);
+
+
+
+                    sendPostRequest();
+
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {
@@ -130,6 +148,25 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+    }
+
+    private void sendPostRequest() {
+    final Map<String, String> body = new HashMap<>();
+    body.put("label","item1");
+    body.put("exp_date", "02/05/2019");
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, new JSONObject(body),
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                            Log.i(TAG, "response: "+response.toString());
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.i(TAG, "Error While sending data: "+error.getMessage());
+            }
+        });
+        requestQueue.add(jsonObjectRequest);
     }
 
     private final Handler handler = new Handler() {
