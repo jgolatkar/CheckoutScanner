@@ -31,10 +31,16 @@ import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         surfaceView = findViewById(R.id.cameraView);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
-        url = "http://192.168.43.182:3000/postdata";
+        url = "http://192.168.43.165:3000/postdata";
         requestQueue.start();
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED){
             if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity
@@ -124,36 +130,44 @@ public class MainActivity extends AppCompatActivity {
             public void receiveDetections(Detector.Detections<Barcode> detections) {
                 final SparseArray<Barcode> qrCode = detections.getDetectedItems();
                 if(qrCode.size() > 0){
-
+                    //barcodeDetector.release();
                     Vibrator vibrator = (Vibrator)getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
                     assert vibrator != null;
                     vibrator.vibrate(500);
-                    String documentId = qrCode.valueAt(0).displayValue;
+                    String value = qrCode.valueAt(0).displayValue;
+                    String[] parts = value.split(",");
+                    String label = parts[0];
+                    Date date = null;
+                    String exp_date = null;
+                    try {
+                        date = DateFormat.getDateInstance().parse(parts[1]);
+                        exp_date = DateFormat.getDateInstance().format(date);
 
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
 
+                    Log.i(TAG, "value: "+ value);
                     Message msg = handler.obtainMessage();
-                    msg.obj = documentId;
+                    msg.obj = value;
                     handler.sendMessage(msg);
-
-
-
-                    sendPostRequest();
-
+                    sendPostRequest(label, exp_date);
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+
                 }
             }
 
         });
     }
 
-    private void sendPostRequest() {
+    private void sendPostRequest(String label, String expDate) {
     final Map<String, String> body = new HashMap<>();
-    body.put("label","item1");
-    body.put("exp_date", "02/05/2019");
+    body.put("label",label);
+    body.put("exp_date", expDate);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, new JSONObject(body),
                 new Response.Listener<JSONObject>() {
                     @Override
