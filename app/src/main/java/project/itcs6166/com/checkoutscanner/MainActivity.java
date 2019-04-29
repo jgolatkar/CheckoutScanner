@@ -40,6 +40,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         surfaceView = findViewById(R.id.cameraView);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
-        url = "http://192.168.43.165:3000/postdata";
+        url = "http://172.20.10.4:3000/postdata";
         requestQueue.start();
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED){
             if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity
@@ -137,21 +138,25 @@ public class MainActivity extends AppCompatActivity {
                     String value = qrCode.valueAt(0).displayValue;
                     String[] parts = value.split(",");
                     String label = parts[0];
-                    Date date = null;
-                    String exp_date = null;
+                  //  Date date = null;
+                   // String exp_date = null;
                     try {
-                        date = DateFormat.getDateInstance().parse(parts[1]);
-                        exp_date = DateFormat.getDateInstance().format(date);
+                        Log.i(TAG, "exp_date: "+ parts[1]);
+                        Date date  = new SimpleDateFormat("MM/dd/yyyy").parse(parts[1]);
+                        Log.i(TAG, "date: "+ date.toString());
+                        String exp_date = DateFormat.getDateInstance().format(date);
+                        Log.i(TAG, "exp_date: "+ exp_date);
+                        sendPostRequest(label, exp_date);
 
                     } catch (ParseException e) {
                         e.printStackTrace();
                     }
 
-                    Log.i(TAG, "value: "+ value);
+                    //Log.i(TAG, "value: "+ value);
                     Message msg = handler.obtainMessage();
                     msg.obj = value;
                     handler.sendMessage(msg);
-                    sendPostRequest(label, exp_date);
+
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {
@@ -168,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
     final Map<String, String> body = new HashMap<>();
     body.put("label",label);
     body.put("exp_date", expDate);
+        Log.i(TAG, "body : "+ body);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, new JSONObject(body),
                 new Response.Listener<JSONObject>() {
                     @Override
